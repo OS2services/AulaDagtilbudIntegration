@@ -36,8 +36,7 @@ public class TaskRunner {
 	@Autowired
 	private AppConfiguration configuration;
 
-	// TODO: change
-	@Scheduled(fixedDelay = 60 * 60 * 1000, initialDelay = 10 * 1000)
+	@Scheduled(cron = "${configuration.cron}")
 	public void run() {
 		log.info("Starting scheduled task");
 
