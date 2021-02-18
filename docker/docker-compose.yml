@@ -1,0 +1,186 @@
+version: "2.4"
+services:     
+  auladagtilbud-kmdi2:
+    image: os2services/kmdi2:1.0.0
+    ports:
+     - 8997:8997
+    environment:
+      # when set to "false", stubbed data is returned
+      configuration.kmdi2.enabled: "true"
+
+      # security key needed to access the REST API exposed by this container
+      configuration.apiKey: "Test1234"
+
+      # list of roles that can be maintained by this container (all other roles are ignored)
+      configuration.allowedRoles: "Teacher,Pedagogue,Substitute"
+
+      # URL and secret access key for KMD I2
+      configuration.kmdi2.url: "https://kmdi2test.azure-api.net/ww-employee/api/v1/municipalities/751"
+      configuration.kmdi2.apiKey: "TODO"
+
+      # stubbed test-data (only used if enabled = false)
+      configuration.testData.employments[0].employmentId: "1"
+      configuration.testData.employments[0].ssn: "0101017001"
+      configuration.testData.employments[0].email: "test1@test.dk"
+      configuration.testData.employments[0].institutionDtrId: "G123456"
+      configuration.testData.employments[0].roles[0]: "Teacher"
+      configuration.testData.employments[0].roles[1]: "Substitute"
+      configuration.testData.employments[1].employmentId: "2"
+      configuration.testData.employments[1].ssn: "0101017002"
+      configuration.testData.employments[1].email: "test2@test.dk"
+      configuration.testData.employments[1].institutionDtrId: "G654321"
+      configuration.testData.employments[1].roles[0]: "Pedagogue"
+    networks:
+      - backend
+
+  auladagtilbud-os2sync:
+    image: os2services/os2syncstub:1.0.0
+    ports:
+     - 5000:5000
+    environment:
+      # security key needed to access the REST API exposed by this container
+      configuration.apiKey: "Test1234"
+
+      # stubbed test-data
+      configuration.testData.users[0].uuid: "f05b5714-d62b-41fc-bace-522aa0fb9df6"
+      configuration.testData.users[0].ssn: "0101017001"
+      configuration.testData.users[0].userId: "user1"
+      configuration.testData.users[0].phone: "10203040"
+      configuration.testData.users[0].email: "user1@mail.dk"
+      configuration.testData.users[0].dtrId: "G17235"
+
+      configuration.testData.users[1].uuid: "661aa52a-e643-498d-80a2-f36346ae84d0"
+      configuration.testData.users[1].ssn: "0101017002"
+      configuration.testData.users[1].userId: "user2"
+      configuration.testData.users[1].phone: "40506070"
+      configuration.testData.users[1].email: "user2@mail.dk"
+      configuration.testData.users[1].dtrId: "G16456"
+
+      configuration.testData.users[2].uuid: "5b50ddcd-4779-42de-b84e-0e8175ffa96b"
+      configuration.testData.users[2].ssn: "2503811076"
+      configuration.testData.users[2].userId: "user3"
+      configuration.testData.users[2].phone: "40506070"
+      configuration.testData.users[2].email: "user3@mail.dk"
+      configuration.testData.users[2].dtrId: "G17223"
+
+      configuration.testData.users[3].uuid: "38da9389-857c-4e5e-a609-f79a3f7d567f"
+      configuration.testData.users[3].ssn: "1511811038"
+      configuration.testData.users[3].userId: "user4"
+      configuration.testData.users[3].phone: "40506070"
+      configuration.testData.users[3].email: "user4@mail.dk"
+      configuration.testData.users[3].dtrId: "G17465"
+
+      configuration.testData.users[4].uuid: "a0221e0e-fc53-4b4f-840e-be0c20ee6288"
+      configuration.testData.users[4].ssn: "1511811038"
+      configuration.testData.users[4].userId: "user5"
+      configuration.testData.users[4].phone: "40506070"
+      configuration.testData.users[4].email: "user5@mail.dk"
+      configuration.testData.users[4].dtrId: "G16456"
+    networks:
+      - backend
+
+#  auladagtilbud-os2sync:
+#    image: os2sync/linux:2.5.1
+#    ports:
+#     - 5000:5000
+#    environment:
+#      ClientCertPath: "/home/cert/keystore.pfx"
+#      ClientCertPassword: "Test1234"
+#      LogRequestResponse: "false"
+#      DisableRevocationCheck: "true"
+#      EnableScheduler: "false"
+#      Municipality: "29189978"
+#      ApiKey: "Test1234"
+#      Environment: "TEST"
+#      LogLevel: "INFO"
+#    volumes:
+#      - ./cert:/home/cert
+#    networks:
+#      - backend
+
+  auladagtilbud-roles:
+    image: os2services/rolesfromad:1.0.0
+    ports:
+     - 8999:8999
+    environment:
+      # when set to "false", stubbed data is returned
+      configuration.enabled: "false"
+
+      # security key needed to access the REST API exposed by this container
+      configuration.apiKey: "Test1234"
+
+      # security key needed to communicate with the on-premise AD agent
+      configuration.webSocketKey: "e88abb99-70b3-4aa8-9d5c-4f76f9927a2e"
+
+      # mappings between AD group identifiers and AULA roles
+      configuration.mapping[0].identifier: "Teacher"
+      configuration.mapping[0].groupIdentifier: "Sikkerhedsgruppe Lærer"
+      configuration.mapping[1].identifier: "Pedagogue"
+      configuration.mapping[1].groupIdentifier: "Sikkerhedsgruppe Pædagog"
+
+      # stubbed test-data (only used if enabled = false)
+      configuration.testData[0].uuid: "f05b5714-d62b-41fc-bace-522aa0fb9df6"
+      configuration.testData[0].userId: "user1"
+      configuration.testData[1].uuid: "661aa52a-e643-498d-80a2-f36346ae84d0"
+      configuration.testData[1].userId: "user2"
+    networks:
+      - backend
+
+#  auladagtilbud-roles:
+#    image: os2services/rolesfromos2rollekatalog:1.0.0
+#    ports:
+#     - 8999:8999
+#    environment:
+      # when set to "false", stubbed data is returned
+#      configuration.rc.enabled: "false"
+
+      # security key needed to access the REST API exposed by this container
+#      configuration.apiKey: "Test1234"
+
+      # URL and security key for accessing OS2rollekatalog
+#      configuration.rc.apiKey: "Test1234"
+#      configuration.rc.url: "https://localhost:8090/api"
+
+      # mappings between AD group identifiers and AULA roles
+#      configuration.rc.mapping[0].identifier: "Teacher"
+#      configuration.rc.mapping[0].roleIdentifier: "2"
+
+      # stubbed test-data (only used if enabled = false)
+#      configuration.testData[0].uuid: "f05b5714-d62b-41fc-bace-522aa0fb9df6"
+#      configuration.testData[0].userId: "user1"
+#      configuration.testData[1].uuid: "661aa52a-e643-498d-80a2-f36346ae84d0"
+#      configuration.testData[1].userId: "user2"
+#    networks:
+#      - backend
+
+
+  auladagtilbud-runner:
+    image: os2services/auladagtilbud:1.0.0
+    environment:
+      # run every 5 minutes
+      configuration.cron: "0 0/5 * * * *"
+
+      # list of roles that will be synchronized
+      configuration.roles.supportedRoles: "Teacher,Pedagogue"
+
+      # URL and security key for the role-supplier (OS2rollekatalog and AD)
+      configuration.roles.url: "http://auladagtilbud-roles:8999"
+      configuration.roles.apiKey: "Test1234"
+
+      # URL and security key for the organisation supplier (STS Organisation)
+      configuration.organisation.url: "http://auladagtilbud-os2sync:5000"
+      configuration.organisation.apiKey: "Test1234"
+
+      # URL and security key for the registration service (KMD I2 and perhaps Tabulex in the future)
+      configuration.registration.url: "http://auladagtilbud-kmdi2:8997"
+      configuration.registration.apiKey: "Test1234"
+    networks:
+      - backend
+
+# setup the network used by the docker containers. Default settings are usually fine,
+# but more detailed network setup can be peformed in this section
+#
+# see: https://docs.docker.com/compose/networking/
+networks:
+  backend:
+    name: backend-network
