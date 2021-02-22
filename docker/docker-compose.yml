@@ -1,12 +1,15 @@
 version: "2.4"
 services:     
   auladagtilbud-kmdi2:
-    image: os2services/kmdi2:1.0.0
+    image: os2services/kmdi2:1.1.0
     ports:
      - 8997:8997
     environment:
       # when set to "false", stubbed data is returned
       configuration.kmdi2.enabled: "true"
+
+      # when set to "true" it will not perform updating operations against KMD I2, but instead just log the payload
+      configuration.kmdi2.dryRun: "false"
 
       # security key needed to access the REST API exposed by this container
       configuration.apiKey: "Test1234"
