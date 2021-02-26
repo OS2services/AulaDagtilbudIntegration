@@ -158,7 +158,7 @@ services:
 
 
   auladagtilbud-runner:
-    image: os2services/auladagtilbud:1.0.0
+    image: os2services/auladagtilbud:1.1.0
     environment:
       # run every 5 minutes
       configuration.cron: "0 0/5 * * * *"
