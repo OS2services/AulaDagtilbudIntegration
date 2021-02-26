@@ -163,6 +163,9 @@ services:
       # run every 5 minutes
       configuration.cron: "0 0/5 * * * *"
 
+      # apiKey for manual trigger
+      configuration.apiKey: "Test1234"
+
       # list of roles that will be synchronized
       configuration.roles.supportedRoles: "Teacher,Pedagogue"
 
