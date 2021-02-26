@@ -10,7 +10,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @ConfigurationProperties(prefix = "configuration")
-public class AppConfiguration {	
+public class AppConfiguration {
+	private String apiKey;
 	private OrganisationConfiguration organisation = new OrganisationConfiguration();
 	private RegistrationConfiguration registration = new RegistrationConfiguration();
 	private RoleConfiguration roles = new RoleConfiguration();
