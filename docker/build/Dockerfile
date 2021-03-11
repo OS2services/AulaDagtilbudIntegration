@@ -21,4 +21,4 @@ FROM openjdk:11
 ARG TARGET=/workspace/app/target
 COPY --from=build ${TARGET}/task-runner.jar .
 
-ENTRYPOINT ["java", "-Xmx128m", "-jar", "task-runner.jar"]
+ENTRYPOINT ["java", "-Dloader.path=config/*", "-Xmx256m", "-jar", "task-runner.jar"]
