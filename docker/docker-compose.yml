@@ -1,7 +1,7 @@
 version: "2.4"
 services:     
   auladagtilbud-kmdi2:
-    image: os2services/kmdi2:1.1.0
+    image: os2services/kmdi2:1.2.0
     ports:
      - 8997:8997
     environment:
@@ -37,7 +37,7 @@ services:
       - backend
 
   auladagtilbud-os2sync:
-    image: os2services/os2syncstub:1.0.0
+    image: os2services/os2syncstub:1.2.0
     ports:
      - 5000:5000
     environment:
@@ -102,7 +102,7 @@ services:
 #      - backend
 
   auladagtilbud-roles:
-    image: os2services/rolesfromad:1.0.0
+    image: os2services/rolesfromad:1.2.0
     ports:
      - 8999:8999
     environment:
@@ -158,30 +158,38 @@ services:
 
 
   auladagtilbud-runner:
-    image: os2services/auladagtilbud:1.1.0
+    image: os2services/auladagtilbud:1.2.0
     ports:
      - 8755:8755
-    environment:
+
+    # This show-cases how to use an external configuration file. If an external configuration file is
+    # not wanted, just use the environment section below... the volume mount is used to point to
+    # the external configuration file, which contains the same settings as shown below in the
+    # commented out environment section
+
+    # environment:
       # run every 5 minutes
-      configuration.cron: "0 0/5 * * * *"
+      # configuration.cron: "0 0/5 * * * *"
 
       # apiKey for manual trigger
-      configuration.apiKey: "Test1234"
+      # configuration.apiKey: "Test1234"
 
       # list of roles that will be synchronized
-      configuration.roles.supportedRoles: "Teacher,Pedagogue"
+      # configuration.roles.supportedRoles: "Teacher,Pedagogue"
 
       # URL and security key for the role-supplier (OS2rollekatalog and AD)
-      configuration.roles.url: "http://auladagtilbud-roles:8999"
-      configuration.roles.apiKey: "Test1234"
+      # configuration.roles.url: "http://auladagtilbud-roles:8999"
+      # configuration.roles.apiKey: "Test1234"
 
       # URL and security key for the organisation supplier (STS Organisation)
-      configuration.organisation.url: "http://auladagtilbud-os2sync:5000"
-      configuration.organisation.apiKey: "Test1234"
+      # configuration.organisation.url: "http://auladagtilbud-os2sync:5000"
+      # configuration.organisation.apiKey: "Test1234"
 
       # URL and security key for the registration service (KMD I2 and perhaps Tabulex in the future)
-      configuration.registration.url: "http://auladagtilbud-kmdi2:8997"
-      configuration.registration.apiKey: "Test1234"
+      # configuration.registration.url: "http://auladagtilbud-kmdi2:8997"
+      # configuration.registration.apiKey: "Test1234"
+    volumes:
+      - ./runner-config:/config
     networks:
       - backend
 
