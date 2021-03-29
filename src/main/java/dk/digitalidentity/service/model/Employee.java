@@ -1,7 +1,7 @@
 package dk.digitalidentity.service.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -18,7 +18,8 @@ public class Employee {
 	private String institutionDtrId;
 	private String email;
 	private String mobilePhone;
-	private List<String> roles = new ArrayList<String>();
+	private boolean manager;
+	private Set<String> roles = new HashSet<String>();
 	
 	// used for internal book-keeping
 	@JsonIgnore
@@ -35,7 +36,8 @@ public class Employee {
 		this.mobilePhone = user.getPhone();
 		this.uuid = user.getUuid();
 		this.userId = user.getUserId();
-		this.roles = new ArrayList<String>();
+		this.roles = new HashSet<String>();
+		this.manager = user.isManager();
 	}
 
 	@JsonIgnore

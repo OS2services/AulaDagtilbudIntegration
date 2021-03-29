@@ -8,6 +8,7 @@ import lombok.Setter;
 public class RegistrationConfiguration {
 	private String url;
 	private String apiKey;
+	private String[] dtrFilter;
 	
 	public String getUrl() {
 		if (url.endsWith("/")) {

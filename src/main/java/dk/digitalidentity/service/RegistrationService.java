@@ -1,8 +1,14 @@
 package dk.digitalidentity.service;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -19,17 +25,29 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 public class RegistrationService {
-
+	private List<String> supportedRoles;
+	
 	@Autowired
 	private RestTemplate restTemplate;
 	
 	@Autowired
 	private AppConfiguration configuration;
 
+	@PostConstruct
+	public void init() {
+		supportedRoles = Arrays.asList(configuration.getRoles().getSupportedRoles());
+	}
+
 	public void update(List<Employee> employees) {
 		log.info("Fetching existing employments from KMD I2");
 		List<Employee> existingEmployees = fetchEmployments();
-		
+
+		Set<String> institutionFilter = getInstitutionFilter(employees);
+		log.info("Filtering on institutions: " + String.join(",", institutionFilter));
+
+		existingEmployees = existingEmployees.stream().filter(e -> institutionFilter.contains(e.getInstitutionDtrId())).collect(Collectors.toList());
+		log.info(existingEmployees.size() + " employees from KMD I2 after filtering");
+
 		// find any we need to delete
 		for (Employee existingEmployee : existingEmployees) {
 			boolean found = false;
@@ -50,7 +68,7 @@ public class RegistrationService {
 		for (Employee existingEmployee : existingEmployees) {			
 			for (Employee employee : employees) {
 				if (compare(employee, existingEmployee)) {
-					updateEmployee(employee, existingEmployee);
+					updateEmployee(employee, existingEmployee, false);
 					break;
 				}
 			}
@@ -73,7 +91,25 @@ public class RegistrationService {
 		}
 	}
 	
+	private Set<String> getInstitutionFilter(List<Employee> employees) {
+		Set<String> implicitFilter = employees.stream().map(e -> e.getInstitutionDtrId()).collect(Collectors.toSet());
+		
+		Set<String> filter = new HashSet<>(implicitFilter);
+		if (configuration.getRegistration().getDtrFilter() != null && configuration.getRegistration().getDtrFilter().length > 0) {
+			List<String> configuredFilter = Arrays.asList(configuration.getRegistration().getDtrFilter());
+			
+			filter.removeIf(f -> !configuredFilter.contains(f));
+		}
+		
+		return filter;
+	}
+
 	private void createEmployee(Employee employee) {
+		if (employee.getRoles().size() == 0) {
+			log.info("Not creating employee (no roles): " + employee.stringIdentifier());
+			return;
+		}
+
 		log.info("Creating employee: " + employee.stringIdentifier());
 
 		try {
@@ -90,8 +126,8 @@ public class RegistrationService {
 		}			
 	}
 
-	private void updateEmployee(Employee employee, Employee existingEmployee) {
-		boolean changes = false;
+	private void updateEmployee(Employee employee, Employee existingEmployee, boolean forceUpdate) {
+		boolean changes = forceUpdate;
 
 		// note: startDate, endDate and workPhone is not currently updateable (no input data)
 		
@@ -110,60 +146,94 @@ public class RegistrationService {
 			changes = true;
 		}
 
-		long existingRoleCount = existingEmployee.getRoles() != null ? existingEmployee.getRoles().size() : 0;
-		long roleCount = employee.getRoles() != null ? employee.getRoles().size() : 0;
-		if (existingRoleCount != roleCount) {
-			existingEmployee.setRoles(employee.getRoles());
-			changes = true;
+		// ensure sane data
+		if (existingEmployee.getRoles() == null) {
+			existingEmployee.setRoles(new HashSet<String>());
 		}
-		else if (existingRoleCount == 0) {
-			; // do nothing, they are both empty
+		if (employee.getRoles() == null) {
+			employee.setRoles(new HashSet<String>());
 		}
-		else {
-			// more complex comparison needed - but we know that they are equal and > 1 in count
 
-			boolean missingRole = false;
+		// roles to add
+		for (String role : employee.getRoles()) {
+			boolean found = false;
+
 			for (String existingRole : existingEmployee.getRoles()) {
-				boolean found = false;
-				
-				for (String role : employee.getRoles()) {
-					if (Objects.equals(role, existingRole)) {
-						found = true;
-						break;
-					}
-				}
-				
-				if (!found) {
-					missingRole = true;
+				if (Objects.equals(existingRole, role)) {
+					found = true;
 					break;
 				}
 			}
 			
-			if (missingRole) {
-				existingEmployee.setRoles(employee.getRoles());
+			if (!found) {
+				existingEmployee.getRoles().add(role);
 				changes = true;
 			}
 		}
 		
-		if (changes) {
-			log.info("Updating employee: " + existingEmployee.stringIdentifier());
+		// roles to remove
+		for (Iterator<String> iterator = existingEmployee.getRoles().iterator(); iterator.hasNext();) {
+			String existingRole = iterator.next();
 
-			try {
-				String url = configuration.getRegistration().getUrl() + "/api/employments/" + existingEmployee.getEmploymentId();
-	
-				HttpHeaders headers = new HttpHeaders();
-				headers.add("ApiKey", configuration.getRegistration().getApiKey());
-	
-				HttpEntity<Employee> request = new HttpEntity<>(existingEmployee, headers);
-				restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+			// skip unsupported roles
+			if (!supportedRoles.contains(existingRole)) {
+				continue;
 			}
-			catch (Exception ex) {
-				log.info("Failed to updated employee", ex);
+			
+			boolean found = false;
+			for (String role : employee.getRoles()) {
+				if (Objects.equals(role, existingRole)) {
+					found = true;
+					break;
+				}
+			}
+			
+			if (!found) {
+				changes = true;
+				iterator.remove();
+			}
+		}
+		
+		if (changes) {
+			if (!forceUpdate && existingEmployee.getRoles().size() == 0) {
+				// unless we are forcing an update, if the employee has no roles, we delete him/her
+				deleteEmployee(existingEmployee);
+			}
+			else {
+				log.info("Updating employee: " + existingEmployee.stringIdentifier());
+	
+				try {
+					String url = configuration.getRegistration().getUrl() + "/api/employments/" + existingEmployee.getEmploymentId();
+		
+					HttpHeaders headers = new HttpHeaders();
+					headers.add("ApiKey", configuration.getRegistration().getApiKey());
+		
+					HttpEntity<Employee> request = new HttpEntity<>(existingEmployee, headers);
+					restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+				}
+				catch (Exception ex) {
+					log.info("Failed to updated employee", ex);
+				
+				}
 			}
 		}
 	}
 	
 	private void deleteEmployee(Employee existingEmployee) {
+		// do we have any roles left if we remove supported roles
+		boolean changes = existingEmployee.getRoles().removeIf(r -> supportedRoles.contains(r));
+
+		// then we just need to update the user
+		if (existingEmployee.getRoles().size() > 0) {
+			log.warn("NOT deleting " + existingEmployee.stringIdentifier() + " because of roles: " + String.join(",", existingEmployee.getRoles()));
+
+			if (changes) {
+				updateEmployee(existingEmployee, existingEmployee, true);
+			}
+
+			return;
+		}
+		
 		log.info("Deleting employee: " + existingEmployee.stringIdentifier());
 
 		try {

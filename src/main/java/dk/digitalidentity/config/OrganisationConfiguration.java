@@ -8,6 +8,8 @@ import lombok.Setter;
 public class OrganisationConfiguration {
 	private String url;
 	private String apiKey;
+	private boolean readManagers;
+	private boolean implicitManagerRole;
 	
 	public String getUrl() {
 		if (url.endsWith("/")) {

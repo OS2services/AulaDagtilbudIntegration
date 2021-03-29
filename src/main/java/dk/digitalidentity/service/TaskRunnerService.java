@@ -41,7 +41,7 @@ public class TaskRunnerService {
 		else {
 			log.info("Got " + employees.size() + " users from organisation");
 		}
-		
+
 		int totalRoleCount = 0;
 		for (String role : configuration.getRoles().getSupportedRoles()) {
 			log.info("Fetching all users with role: " + role);
@@ -94,7 +94,33 @@ public class TaskRunnerService {
 				continue;
 			}
 
-			employees.add(new Employee(user));
+			// skip managers if not configured
+			if (!configuration.getOrganisation().isReadManagers() && user.isManager()) {
+				continue;
+			}
+
+			Employee match = null;
+			for (Employee employee : employees) {
+				if (Objects.equals(employee.getInstitutionDtrId(), user.getDtrId()) &&
+					Objects.equals(employee.getSsn(), user.getSsn())) {
+					match = employee;
+					break;
+				}
+			}
+			
+			// update existing or create new
+			Employee employee = null;
+			if (match != null) {
+				employee = match;
+			}
+			else {
+				employee = new Employee(user);
+				employees.add(employee);
+			}
+			
+			if (configuration.getOrganisation().isImplicitManagerRole() && user.isManager()) {
+				employee.getRoles().add("InstitutionManager");
+			}
 		}
 
 		return employees;
