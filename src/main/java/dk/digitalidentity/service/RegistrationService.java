@@ -45,8 +45,13 @@ public class RegistrationService {
 		Set<String> institutionFilter = getInstitutionFilter(employees);
 		log.info("Filtering on institutions: " + String.join(",", institutionFilter));
 
+		// apply DTR-ID filter on existing employees in KMD I2
 		existingEmployees = existingEmployees.stream().filter(e -> institutionFilter.contains(e.getInstitutionDtrId())).collect(Collectors.toList());
 		log.info(existingEmployees.size() + " employees from KMD I2 after filtering");
+		
+		// apply DTR-ID filter on employees from Organisation
+		employees = employees.stream().filter(e -> institutionFilter.contains(e.getInstitutionDtrId())).collect(Collectors.toList());
+		log.info(employees.size() + " employees from Organisation after filtering");
 
 		// find any we need to delete
 		for (Employee existingEmployee : existingEmployees) {
